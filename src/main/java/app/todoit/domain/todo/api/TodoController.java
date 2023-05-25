@@ -1,7 +1,7 @@
 package app.todoit.domain.todo.api;
 
 import app.todoit.domain.auth.entity.User;
-import app.todoit.domain.todo.dto.GetTodoResponseDto;
+import app.todoit.domain.todo.dto.TodoResponseDto;
 import app.todoit.domain.todo.dto.TodoTaskDto;
 import app.todoit.domain.todo.service.TodoService;
 import app.todoit.global.interceptor.UserThreadLocal;
@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 
 @RestController
 @RequestMapping("/api/todo")
@@ -18,17 +17,9 @@ public class TodoController {
     private final TodoService todoService;
 
     @GetMapping("")
-    public GetTodoResponseDto getTodayTodo (@RequestParam(required = false) String date) {
+    public TodoResponseDto getTodayTodo (@RequestParam(required = false) String date) {
         User user = UserThreadLocal.get();
-        LocalDate now ;
-        if (date==null) {
-            now = LocalDate.now();
-        }
-        else {
-            now = LocalDate.parse(date);
-        }
-
-        return todoService.getTodayTodo(user, now);
+        return todoService.getTodo(user, date);
     }
 
     @PostMapping("")

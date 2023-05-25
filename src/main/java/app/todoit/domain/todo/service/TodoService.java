@@ -1,7 +1,7 @@
 package app.todoit.domain.todo.service;
 
 import app.todoit.domain.auth.entity.User;
-import app.todoit.domain.todo.dto.GetTodoResponseDto;
+import app.todoit.domain.todo.dto.TodoResponseDto;
 import app.todoit.domain.todo.dto.TodoTaskDto;
 import app.todoit.domain.todo.entity.Todo;
 import app.todoit.domain.todo.entity.TodoTask;
@@ -23,101 +23,108 @@ public class TodoService {
     private final TodoRepository todoRepository;
     private final TodoTaskRepository todoTaskRepository;
 
-    public GetTodoResponseDto getTodayTodo (User user, LocalDate date) {
-        Optional<Todo> todo = todoRepository.findByDateAndUserId(date, user.getId());
-        Todo present;
-        if (!todo.isPresent()) {
-            //새 투두 생성
-            present = todoRepository.save(new Todo(user, date));
-        }
-        else { present= todo.get();}
-
-        Optional<List<TodoTask>> taskEntity = todoTaskRepository.findAllByTodoTodoId(present.getTodoId());
-        GetTodoResponseDto res = new GetTodoResponseDto(date);
-
-        if (taskEntity.isPresent()) {
-            List<TodoTaskDto> taskDto = listEntityToListDto(taskEntity.get());
-            res = GetTodoResponseDto.builder()
-                    .date(date)
-                    .task(taskDto)
-                    .build();
-        }
-
-        return res;
+    public TodoResponseDto getTodo (User user, String inputDate) {
+        LocalDate date = checkDate(inputDate);
+        Todo todoEntity = getTodoOfTheDate(user, date);
+        List<TodoTask> todoTaskEntity = getTodoTaskEntity(todoEntity);
+        List<TodoTaskDto> todoTaskDto = listEntityToListDto(todoTaskEntity);
+        return TodoResponseDto.builder()
+                .date(date)
+                .task(todoTaskDto)
+                .build();
     }
 
-    public List<TodoTaskDto> listEntityToListDto (List<TodoTask> entity) {
+    public LocalDate checkDate (String date) {
+        if (date!= null) return LocalDate.parse(date);
+        else return LocalDate.now();
+    }
+
+    public Todo getTodoOfTheDate (User user, LocalDate date) {
+        Optional<Todo> todo = todoRepository.findByDateAndUserId(date, user.getId());
+        if (!todo.isPresent()) return  todoRepository.save(new Todo(user, date));
+        else  return todo.get();
+    }
+
+    public List<TodoTask> getTodoTaskEntity (Todo todo) {
+        Optional<List<TodoTask>> taskEntity = todoTaskRepository.findAllByTodoTodoId(todo.getTodoId());
+        if(taskEntity.isPresent()) return taskEntity.get();
+        else return new ArrayList<>();
+    }
+
+    public List<TodoTaskDto> listEntityToListDto (List<TodoTask> taskEntity) {
         List<TodoTaskDto> res = new ArrayList<>();
-        for (TodoTask t : entity) {
-            TodoTaskDto taskDto = new TodoTaskDto().toDto(t);
+        for (TodoTask t : taskEntity) {
+            TodoTaskDto taskDto = TodoTaskDto.builder()
+                    .taskId(t.getTaskId())
+                    .task(t.getTask())
+                    .challenge(t.getChallenge())
+                    .isFromChallenge(t.getIsFromChallenge())
+                    .complete(t.getComplete())
+                    .build();
             res.add(taskDto);
         }
         return res;
     }
 
     public TodoTaskDto addTask (User user, String task) {
-        Todo todo = todoRepository.findByDateAndUserId(LocalDate.now(), user.getId()).get();
+        Todo todo = getTodoOfTheDate(user, LocalDate.now());
         TodoTask save = todoTaskRepository.save(new TodoTask(task, todo));
-        return new TodoTaskDto().toDto(save);
+        return TodoTaskDto.builder()
+                .taskId(save.getTaskId())
+                .task(save.getTask())
+                .challenge(save.getChallenge())
+                .isFromChallenge(save.getIsFromChallenge())
+                .complete(save.getComplete())
+                .build();
     }
 
     public String deleteTask(User user, Long taskId) {
-        // TODO: 2023/03/28 cascade처리해야함
-        Optional<TodoTask> task = todoTaskRepository.findById(taskId);
-        if (!task.isPresent()){
-            throw new TodoException(ErrorCode.TASK_NOT_FOUND);
-        }
-        else {
-            if (!getUserIdFromTask(task.get()).equals(user.getId())) {
-                throw new TodoException(ErrorCode.TODO_UNAUTHORIZED);
-            }
-            else  {
-                todoTaskRepository.deleteById(taskId);
-                return "태스크 삭제 성공";
-            }
-        }
-
+        checkTaskPresentOrElseThrow(taskId,user);
+        todoTaskRepository.deleteById(taskId);
+        return "태스크 삭제 성공";
     }
 
     public TodoTaskDto modifyTask(User user, Long taskId, String newTask) {
-
-        Optional<TodoTask> task = todoTaskRepository.findById(taskId);
-        if (task.isPresent()) {
-            if (!getUserIdFromTask(task.get()).equals(user.getId())) {
-                throw new TodoException(ErrorCode.TODO_UNAUTHORIZED);
-            }
-            else {
-                task.get().setTask(newTask);
-                TodoTask save = todoTaskRepository.save(task.get());
-                return new TodoTaskDto().toDto(save);
-            }
-        }
-        else {
-            throw new TodoException(ErrorCode.TASK_NOT_FOUND);
-        }
+        TodoTask todoTask = checkTaskPresentOrElseThrow(taskId, user);
+        todoTask.setTask(newTask);
+        todoTaskRepository.save(todoTask);
+        return TodoTaskDto.builder()
+                .taskId(taskId)
+                .task(todoTask.getTask())
+                .challenge(todoTask.getChallenge())
+                .isFromChallenge(todoTask.getIsFromChallenge())
+                .complete(todoTask.getIsFromChallenge())
+                .build();
     }
 
     public TodoTaskDto setComplete(User user, Long taskId) {
-
-        Optional<TodoTask> task = todoTaskRepository.findById(taskId);
-        if (task.isPresent()) {
-            if (!getUserIdFromTask(task.get()).equals(user.getId())) {
-                throw new TodoException(ErrorCode.TODO_UNAUTHORIZED);
-            }
-            else {
-                task.get().setComplete();
-                TodoTask save = todoTaskRepository.save(task.get());
-                return new TodoTaskDto().toDto(save);
-            }
-        }
-        else {
-            throw new TodoException(ErrorCode.TASK_NOT_FOUND);
-        }
-
+        TodoTask todoTask = checkTaskPresentOrElseThrow(taskId, user);
+        todoTask.setComplete();
+        todoTaskRepository.save(todoTask);
+        return TodoTaskDto.builder()
+                .taskId(taskId)
+                .task(todoTask.getTask())
+                .challenge(todoTask.getChallenge())
+                .isFromChallenge(todoTask.getIsFromChallenge())
+                .complete(todoTask.getIsFromChallenge())
+                .build();
     }
 
     public Long getUserIdFromTask (TodoTask task) {
         return task.getTodo().getUser().getId();
+    }
+
+    public TodoTask checkTaskPresentOrElseThrow (Long taskId, User user) {
+        Optional<TodoTask> task = todoTaskRepository.findById(taskId);
+        if (task.isPresent()) {
+            Long userIdFromTask = getUserIdFromTask(task.get());
+            Long userId = user.getId();
+            if (!userIdFromTask.equals(userId)) throw new TodoException(ErrorCode.TODO_UNAUTHORIZED);
+            else  return task.get();
+        }
+        else {
+            throw new TodoException(ErrorCode.TASK_NOT_FOUND);
+        }
     }
 
 }

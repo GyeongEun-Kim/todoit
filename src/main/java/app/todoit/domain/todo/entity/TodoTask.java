@@ -14,7 +14,7 @@ import javax.persistence.*;
 @NoArgsConstructor
 public class TodoTask {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "todo_task_id")
     private Long taskId;
 
@@ -43,8 +43,7 @@ public class TodoTask {
     }
 
     public void setComplete () {
-        if(complete)
-            complete=false;
+        if(complete) complete=false;
         else complete=true;
     }
 

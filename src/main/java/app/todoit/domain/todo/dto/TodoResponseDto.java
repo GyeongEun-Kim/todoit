@@ -9,11 +9,11 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @Builder
-public class GetTodoResponseDto {
+public class TodoResponseDto {
     private LocalDate date;
     private List<TodoTaskDto> task;
 
-    public GetTodoResponseDto(LocalDate date) {
+    public TodoResponseDto(LocalDate date) {
         this.date = date;
         this.task = new ArrayList<>();
     }

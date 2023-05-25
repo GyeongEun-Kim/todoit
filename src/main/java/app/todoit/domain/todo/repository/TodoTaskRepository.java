@@ -13,6 +13,7 @@ import java.util.Optional;
 public interface TodoTaskRepository extends JpaRepository<TodoTask,Long> {
     //@Query(value = "SELECT k FROM TodoTask k JOIN FETCH k.todoId t WHERE t.date = :date ")
     Optional<List<TodoTask>> findAllByTask ( String task);
+    //같은 이름의 태스크 생성가능?
 
     Optional<List<TodoTask>> findAllByTodoTodoId (Long todoId);
 }
