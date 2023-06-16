@@ -1,20 +1,19 @@
 package app.todoit.global.interceptor;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.springframework.stereotype.Component;
-import org.springframework.web.method.HandlerMethod;
-import org.springframework.web.servlet.HandlerInterceptor;
-
 import app.todoit.domain.auth.entity.User;
-import app.todoit.domain.auth.exception.MemberException;
 import app.todoit.domain.auth.repository.UserRepository;
 import app.todoit.domain.auth.token.JwtUtil;
 import app.todoit.global.annotation.WithOutAuth;
+import app.todoit.global.exception.ApiException;
 import app.todoit.global.exception.ErrorCode;
+import app.todoit.global.exception.NotFoundException;
 import app.todoit.global.redis.service.RedisService;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.HandlerInterceptor;
 
 @Slf4j
 @Component
@@ -43,13 +42,13 @@ public class AuthInterceptor implements HandlerInterceptor {
 		if(withoutAuth == null){
 			if(accessToken == null){
 				log.error("{}", "요청헤더에 토큰이 존재하지 않습니다.");
-				throw new MemberException(ErrorCode.UNAUTHORIZED);
+				throw new ApiException(ErrorCode.UNAUTHORIZED);
 			}
 			jwtUtil.validateToken(accessToken);
 
 			String userId = jwtUtil.getSubject(accessToken);
 			User user = userRepository.findById(Long.parseLong(userId))
-				.orElseThrow(()->new MemberException(ErrorCode.NOT_FOUND_USER));
+				.orElseThrow(()->new NotFoundException(ErrorCode.NOT_FOUND_USER, userId));
 			log.info("user : {}", user.getEmail());
 
 			// 로그아웃 체크

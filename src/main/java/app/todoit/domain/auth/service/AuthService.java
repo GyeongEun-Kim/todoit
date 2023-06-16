@@ -1,20 +1,18 @@
 package app.todoit.domain.auth.service;
 
-import java.util.Optional;
-
-import org.springframework.stereotype.Service;
-
-import antlr.Token;
 import app.todoit.domain.auth.dto.JoinRequestDto;
 import app.todoit.domain.auth.dto.KakaoUserDto;
 import app.todoit.domain.auth.dto.TokenDto;
 import app.todoit.domain.auth.entity.User;
-import app.todoit.domain.auth.exception.MemberException;
 import app.todoit.domain.auth.repository.UserRepository;
 import app.todoit.domain.auth.token.JwtUtil;
+import app.todoit.global.exception.ApiException;
 import app.todoit.global.exception.ErrorCode;
+import app.todoit.global.exception.NotFoundException;
 import app.todoit.global.redis.service.RedisService;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
@@ -37,7 +35,7 @@ public class AuthService {
 		Optional<User> kakaoUser = userRepository.findByEmail(joinRequestDto.getEmail());
 
 		if(kakaoUser.isPresent())
-			throw new MemberException(ErrorCode.ALREADY_EXIST_USER);
+			throw new NotFoundException(ErrorCode.ALREADY_EXIST_USER, joinRequestDto.getEmail());
 
 		User user = userRepository.save(joinRequestDto.toEntity());
 
@@ -53,7 +51,7 @@ public class AuthService {
 	public TokenDto login(KakaoUserDto kakaoUserDto){
 		User reqUser = kakaoUserDto.toEntity();
 		User user = userRepository.findByEmail(reqUser.getEmail())
-			.orElseThrow(() -> new MemberException(ErrorCode.NOT_FOUND_USER));
+			.orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_USER, reqUser.getEmail()));
 
 		String atk = jwtUtil.generateAccessToken(user);
 		String rtk = jwtUtil.generateRefreshToken(user);
@@ -73,7 +71,7 @@ public class AuthService {
 		String savedRefreshToken = redisService.getRefreshToken(user.get());
 
 		if(!refreshToken.equals(savedRefreshToken)){
-			throw new MemberException(ErrorCode.INVALID_TOKEN);
+			throw new ApiException(ErrorCode.INVALID_TOKEN);
 		}
 		String atk = jwtUtil.generateAccessToken(user.get());
 		redisService.saveAccessToken(user.get(), atk);

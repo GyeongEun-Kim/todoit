@@ -1,34 +1,32 @@
 package app.todoit.domain.challenge.service;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import app.todoit.domain.auth.entity.User;
-import app.todoit.domain.auth.exception.MemberException;
 import app.todoit.domain.auth.repository.UserRepository;
 import app.todoit.domain.challenge.dto.ChallengeDto;
 import app.todoit.domain.challenge.entity.Challenge;
 import app.todoit.domain.challenge.entity.Challenger;
 import app.todoit.domain.challenge.entity.InviteStatus;
 import app.todoit.domain.challenge.entity.Role;
-import app.todoit.domain.challenge.exception.ChallengeException;
 import app.todoit.domain.challenge.repository.ChallengeRepository;
 import app.todoit.domain.challenge.repository.ChallengerRepository;
 import app.todoit.domain.todo.entity.Todo;
 import app.todoit.domain.todo.entity.TodoTask;
 import app.todoit.domain.todo.repository.TodoRepository;
 import app.todoit.domain.todo.repository.TodoTaskRepository;
+import app.todoit.global.exception.ApiException;
 import app.todoit.global.exception.ErrorCode;
+import app.todoit.global.exception.NotFoundException;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -84,7 +82,7 @@ public class ChallengeService {
 					Optional<User> newUser = userRepository.findByPhone(f.getPhone());
 					if(newUser.isPresent())
 						return inviteChallengers(newChallenge, newUser.get());
-					else throw new MemberException(ErrorCode.NOT_FOUND_USER);
+					else throw new NotFoundException(ErrorCode.NOT_FOUND_USER, newUser.get().getEmail());
 				})
 				.forEach(challengerRepository::save);
 		}
@@ -204,7 +202,7 @@ public class ChallengeService {
 		// 리스트 중 요청 온 챌린지 객체
 		for(ChallengeDto.Challenge challenge : challengeList) {
 			Challenge c = challengeRepository.findById(challenge.getId()).orElseThrow(
-				() -> new ChallengeException(ErrorCode.CHALLENGE_NOT_FOUND)
+				() -> new ApiException(ErrorCode.CHALLENGE_NOT_FOUND)
 			);
 			if (c.getId().equals(challengeId)) {
 				user.getUserInChallenge().stream()
@@ -231,7 +229,7 @@ public class ChallengeService {
 		// 리스트 중 요청 온 챌린지 객체
 		for(ChallengeDto.Challenge challenge : challengeList) {
 			Challenge c = challengeRepository.findById(challenge.getId()).orElseThrow(
-				() -> new ChallengeException(ErrorCode.CHALLENGE_NOT_FOUND)
+				() -> new NotFoundException(ErrorCode.CHALLENGE_NOT_FOUND)
 			);
 			if (c.getId().equals(challengeId)) {
 				user.getUserInChallenge().stream()
@@ -257,7 +255,7 @@ public class ChallengeService {
 
 		for(Challenge c1 : challengeList){
 			List<Challenger> challengerList = challengerRepository.findByChallengeIdAndUser(c1.getId());
-			if(challengerList.size()==0) throw new ChallengeException(ErrorCode.CHALLENGE_NOT_FOUND);
+			if(challengerList.size()==0) throw new NotFoundException(ErrorCode.CHALLENGE_NOT_FOUND);
 
 			for(Challenger c2 : challengerList){
 				if(c2.getUser().getId().equals(requestUser.getId())) {

@@ -5,17 +5,17 @@ import app.todoit.domain.todo.dto.GetTodoResponseDto;
 import app.todoit.domain.todo.dto.TodoTaskDto;
 import app.todoit.domain.todo.entity.Todo;
 import app.todoit.domain.todo.entity.TodoTask;
-import app.todoit.domain.todo.exception.TodoException;
-import app.todoit.domain.todo.repository.TodoTaskRepository;
 import app.todoit.domain.todo.repository.TodoRepository;
+import app.todoit.domain.todo.repository.TodoTaskRepository;
+import app.todoit.global.exception.ApiException;
 import app.todoit.global.exception.ErrorCode;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
+import app.todoit.global.exception.NotFoundException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -65,11 +65,11 @@ public class TodoService {
         // TODO: 2023/03/28 cascade처리해야함
         Optional<TodoTask> task = todoTaskRepository.findById(taskId);
         if (!task.isPresent()){
-            throw new TodoException(ErrorCode.TASK_NOT_FOUND);
+            throw new NotFoundException(ErrorCode.TASK_NOT_FOUND);
         }
         else {
             if (!getUserIdFromTask(task.get()).equals(user.getId())) {
-                throw new TodoException(ErrorCode.TODO_UNAUTHORIZED);
+                throw new ApiException(ErrorCode.TODO_UNAUTHORIZED);
             }
             else  {
                 todoTaskRepository.deleteById(taskId);
@@ -84,7 +84,7 @@ public class TodoService {
         Optional<TodoTask> task = todoTaskRepository.findById(taskId);
         if (task.isPresent()) {
             if (!getUserIdFromTask(task.get()).equals(user.getId())) {
-                throw new TodoException(ErrorCode.TODO_UNAUTHORIZED);
+                throw new ApiException(ErrorCode.TODO_UNAUTHORIZED);
             }
             else {
                 task.get().setTask(newTask);
@@ -93,7 +93,7 @@ public class TodoService {
             }
         }
         else {
-            throw new TodoException(ErrorCode.TASK_NOT_FOUND);
+            throw new NotFoundException(ErrorCode.TASK_NOT_FOUND);
         }
     }
 
@@ -102,7 +102,7 @@ public class TodoService {
         Optional<TodoTask> task = todoTaskRepository.findById(taskId);
         if (task.isPresent()) {
             if (!getUserIdFromTask(task.get()).equals(user.getId())) {
-                throw new TodoException(ErrorCode.TODO_UNAUTHORIZED);
+                throw new ApiException(ErrorCode.TODO_UNAUTHORIZED);
             }
             else {
                 task.get().setComplete();
@@ -111,7 +111,7 @@ public class TodoService {
             }
         }
         else {
-            throw new TodoException(ErrorCode.TASK_NOT_FOUND);
+            throw new NotFoundException(ErrorCode.TASK_NOT_FOUND);
         }
 
     }

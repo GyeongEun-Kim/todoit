@@ -1,16 +1,14 @@
 package app.todoit.global.redis.service;
 
+import app.todoit.domain.auth.entity.User;
+import app.todoit.global.exception.ApiException;
+import app.todoit.global.exception.ErrorCode;
 import java.time.Duration;
-
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
-
-import app.todoit.domain.auth.entity.User;
-import app.todoit.domain.auth.exception.MemberException;
-import app.todoit.global.exception.ErrorCode;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -53,7 +51,7 @@ public class RedisService {
 	public void isExisted(User user){
 		String s = redisTemplate.opsForValue().get("rtk:" + user.getId());
 		if(s == null){
-			throw new MemberException(ErrorCode.LOGOUT_USER);
+			throw new ApiException(ErrorCode.LOGOUT_USER);
 		}
 	}
 

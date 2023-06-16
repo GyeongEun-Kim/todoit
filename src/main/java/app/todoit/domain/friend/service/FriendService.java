@@ -9,18 +9,16 @@ import app.todoit.domain.friend.entity.FriendEntity;
 import app.todoit.domain.friend.entity.FriendId;
 import app.todoit.domain.friend.entity.PendingFriendEntity;
 import app.todoit.domain.friend.entity.PendingFriendId;
-import app.todoit.domain.friend.exception.FriendException;
 import app.todoit.domain.friend.repository.FriendRepository;
 import app.todoit.domain.friend.repository.PendingFriendRepository;
-import app.todoit.domain.todo.entity.TodoTask;
-import app.todoit.domain.todo.exception.TodoException;
+import app.todoit.global.exception.ApiException;
 import app.todoit.global.exception.ErrorCode;
-import lombok.AllArgsConstructor;
-import org.springframework.stereotype.Service;
-
+import app.todoit.global.exception.NotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Service;
 
 @Service
 @AllArgsConstructor
@@ -34,7 +32,7 @@ public class FriendService {
 
         PendingFriendEntity p = new PendingFriendEntity(user, friend);
         if (friendRepository.existsById(new FriendId(user.getId(), friendId)) || friendRepository.existsById(new FriendId(friendId,user.getId()))) {
-            throw new FriendException(ErrorCode.ALREADY_FRIENDS);
+            throw new ApiException(ErrorCode.ALREADY_FRIENDS);
         }
         else if (pendingFriendRepository.existsById(p.getPendingFriendId())) { //이미 신청한 상태면 신청 취소
             pendingFriendRepository.deleteById(p.getPendingFriendId());
@@ -51,7 +49,7 @@ public class FriendService {
         //친구 수락 (pendingFriends 에서 삭제하고 friend에 추가)
         User friend= getUserEntity(friendId);
         if (!pendingFriendRepository.existsById(new PendingFriendId(friendId, user.getId()))) {
-            throw new FriendException(ErrorCode.CANNOT_ACCEPT); //친구가 신청을 취소했는데 수락을 누른경우
+            throw new ApiException(ErrorCode.CANNOT_ACCEPT); //친구가 신청을 취소했는데 수락을 누른경우
         }
         pendingFriendRepository.deleteById(new PendingFriendId(friendId,user.getId()));
         friendRepository.save(new FriendEntity(friend, user));
@@ -64,7 +62,7 @@ public class FriendService {
         //친구 삭제
         Integer friend = friendRepository.exists(user.getId(), friendId);
         if (!friend.equals(1)){
-            throw new FriendException((ErrorCode.FRIENDS_NOT_FOUND));
+            throw new NotFoundException((ErrorCode.FRIENDS_NOT_FOUND));
         }
         else {
             friendRepository.deleteFriend(user.getId(), friendId);
